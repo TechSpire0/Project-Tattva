@@ -37,7 +37,7 @@ function Header({ sidebarOpen, onToggleSidebar }) {
         <nav className="hidden md:flex ml-8 space-x-4">
           {[
             { to: "/", label: "Dashboard" },
-            { to: "/edna-browser", label: "eDNA Browser" },
+            // { to: "/edna-browser", label: "eDNA Browser" },
             { to: "/otolith-classifier", label: "Otolith Classifier" },
             { to: "/data-upload", label: "Data Upload" },
           ].map((item) => (

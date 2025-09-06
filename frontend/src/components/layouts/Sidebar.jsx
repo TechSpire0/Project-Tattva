@@ -54,8 +54,7 @@ function Sidebar({ sidebarOpen, onNavLinkClick, onToggleSidebar }) {
         <ul>
           {[
             { to: "/chat", label: "Chat" },
-            { to: "/history", label: "History" },
-            { to: "/settings", label: "Settings" },
+            { to: "/workspace", label: "Workspace" },
           ].map((item) => (
             <li className="mb-2" key={item.to}>
               <NavLink

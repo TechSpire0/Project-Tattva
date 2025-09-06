@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 import Header from './components/layouts/Header';
+import ConversationalAIPage from './pages/ConversationalAIPage';
 import Sidebar from './components/layouts/Sidebar';
 import DashboardPage from './pages/DashboardPage';
 import OtolithClassifierPage from './pages/OtolithClassifierPage';
+import DataUploadPage from './pages/DataUploadPage';
 
 const ComingSoon = () => (
   <div className="p-8">
@@ -64,11 +66,10 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/otolith-classifier" element={<OtolithClassifierPage />} />
-            <Route path="/edna-browser" element={<ComingSoon />} />
-            <Route path="/data-upload" element={<ComingSoon />} />
-            <Route path="/chat" element={<ComingSoon />} />
-            <Route path="/history" element={<ComingSoon />} />
-            <Route path="/settings" element={<ComingSoon />} />
+            {/* <Route path="/edna-browser" element={<ComingSoon />} /> */}
+            <Route path="/data-upload" element={<DataUploadPage />} />
+            <Route path="/chat" element={<ConversationalAIPage />} />
+            <Route path="/workspace" element={<ComingSoon />} />
           </Routes>
         </main>
       </div>

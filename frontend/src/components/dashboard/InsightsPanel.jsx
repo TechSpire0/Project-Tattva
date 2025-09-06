@@ -1,9 +1,12 @@
 import React from "react";
 import useApi from "../../hooks/useApi";
 import apiClient from "../../services/apiClient";
+import { useNavigate } from "react-router-dom";
+
 
 // A simple lightbulb icon for the header
 const LightbulbIcon = () => (
+  
   <svg
     xmlns="http://www.w3.org/2000/svg"
     className="h-6 w-6"
@@ -25,6 +28,8 @@ const getHypothesis = () => apiClient.get("/hypotheses");
 
 function InsightsPanel() {
   const { data: hypothesisData, loading, error } = useApi(getHypothesis);
+  const navigate = useNavigate();
+
 
   if (loading) {
     return (
@@ -56,7 +61,8 @@ function InsightsPanel() {
         <h3 className="text-lg font-semibold ml-2">AI-Generated Insight</h3>
 
         {/* Chatbot button two spaces after text */}
-        <button className="ml-2 px-3 py-1 text-xs font-medium bg-black text-white rounded hover:bg-gray-800 transition-colors">
+        <button className="ml-2 px-3 py-1 text-xs font-medium bg-black text-white rounded hover:bg-gray-800 transition-colors"onClick={() => navigate('/chat')}
+>
           Chatbot
         </button>
       </div>
