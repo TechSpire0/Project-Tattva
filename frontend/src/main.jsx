@@ -1,14 +1,14 @@
 // src/main.jsx
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import React from "react";
+import ReactDOM from "react-dom/client";
 // 1. Import BrowserRouter from react-router-dom
-import { BrowserRouter } from 'react-router-dom';
-import App from './App.jsx';
-import './index.css';
-import 'leaflet/dist/leaflet.css';
+import { BrowserRouter } from "react-router-dom";
+import App from "./App.jsx";
+import "./index.css";
+import "leaflet/dist/leaflet.css";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     {/* 2. Wrap the entire App component with BrowserRouter */}
     {/* This is the crucial fix. By wrapping <App /> here, we ensure that */}
@@ -17,6 +17,5 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </React.StrictMode>,
+  </React.StrictMode>
 );
-

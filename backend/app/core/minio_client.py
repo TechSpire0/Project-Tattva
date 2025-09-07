@@ -3,9 +3,9 @@ import os
 from minio import Minio
 
 # 2. Load MinIO configuration from environment variables.
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "minio:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ROOT_USER")
-MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD")
+MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+MINIO_ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "minio_access")
+MINIO_SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "minio_secret")
 MINIO_BUCKET = os.getenv("MINIO_BUCKET", "otoliths")
 
 # 3. Create a Minio client instance. This object will be used to interact with the server.

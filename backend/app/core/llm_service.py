@@ -1,22 +1,22 @@
-# 1. Import necessary libraries.
 import os
-import requests
-import json
+import google.generativeai as genai
 
-# 2. Load the API key and configure the API endpoint.
+# Load the API key and configure the client
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Initialize the model using the compatible API
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 def generate_hypothesis_from_finding(correlation_finding: dict) -> str:
     """
     Takes a statistical finding and uses the Gemini LLM to generate a
     human-readable scientific hypothesis.
     """
-    # 3. Check if we have a valid finding to work with.
     if not correlation_finding or correlation_finding.get("error"):
         return "No significant correlations were found in the current dataset."
 
-    # 4. This is our Prompt Engineering step. We create a detailed, structured prompt.
+    # Prompt Engineering: Give the model a persona, context, and instructions.
     prompt = f"""
     You are a marine biology research assistant. Your task is to translate a raw statistical finding into a concise, insightful scientific hypothesis.
 
@@ -36,26 +36,11 @@ def generate_hypothesis_from_finding(correlation_finding: dict) -> str:
 
     **Generate the hypothesis for the finding provided above:**
     """
-
-    # 5. Prepare the payload for the Gemini API.
-    payload = {
-        "contents": [{
-            "parts": [{"text": prompt}]
-        }]
-    }
-
-    headers = {"Content-Type": "application/json"}
-
     try:
-        # 6. Make the POST request to the Gemini API.
-        response = requests.post(GEMINI_API_URL, headers=headers, data=json.dumps(payload))
-        response.raise_for_status() # Raise an exception for bad status codes (4xx or 5xx)
+        # Use the new library to generate the content
+        response = model.generate_content(prompt)
+        return response.text.strip()
 
-        # 7. Parse the JSON response and extract the generated text.
-        result = response.json()
-        hypothesis = result['candidates'][0]['content']['parts'][0]['text']
-        return hypothesis.strip()
-
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"Error calling Gemini API: {e}")
         return "Failed to generate hypothesis due to an API error."

@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import Teamlogo from "../../assets/Teamlog.png";
+import Teamlogo from "../../assets/TechSpire.png";
 
 function Header({ sidebarOpen, onToggleSidebar }) {
   const linkStyle =
