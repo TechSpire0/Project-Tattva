@@ -1,39 +1,47 @@
+# main.py
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import logging
-
-# --- Local Imports ---
-from . import schemas, models
-from .database import SessionLocal, engine, get_db
-from .core.llm_service import generate_chat_response
-from .ml.classifier import otolith_classifier
-from .core.minio_client import get_minio_client
+from sqlalchemy import func
 from minio import Minio
 import uuid
+import logging
+from pydantic import BaseModel
 
-# --- Logging ---
+# --- Local imports ---
+from app import models, schemas
+from app.database import SessionLocal, engine, get_db
+from app.core.minio_client import get_minio_client
+from app.ml.classifier import otolith_classifier
+from app.core import analysis_service, llm_service
+
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# --- Create Tables ---
+# Create all tables
 models.Base.metadata.create_all(bind=engine)
 
-# --- FastAPI App ---
+# Initialize FastAPI
 app = FastAPI(
     title="Tattva API",
-    description="The backend service for the SIH 2025 AI-Driven Marine Data Platform.",
+    description="Backend for SIH 2025 AI-Driven Marine Data Platform",
     version="1.0.0",
-    docs_url="/docs"
+    docs_url=None
 )
 
-# --- CORS Middleware ---
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173"
-]
+# --- Swagger ---
+from fastapi.openapi.docs import get_swagger_ui_html
 
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title
+    )
+
+# --- CORS ---
+origins = ["http://localhost:5173"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -42,35 +50,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Database Dependency ---
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-# ==============================================================================
-
-# API ENDPOINTS
-
+# --- Root ---
 @app.get("/", include_in_schema=False)
 async def root():
     return {"message": "TATTVA is running!"}
 
+# --- Species ---
 @app.get("/api/species", response_model=List[schemas.Species], tags=["Species"])
 async def get_all_species(db: Session = Depends(get_db)):
-    """
-    Retrieves a list of all marine species from the PostgreSQL database.
-    """
     return db.query(models.Species).all()
 
-
+# --- Sightings ---
 @app.get("/api/sightings_sample", response_model=List[schemas.Sighting], tags=["Sightings"])
 async def get_sightings_sample(db: Session = Depends(get_db), limit: int = 50):
-    """
-    Return a sample of sightings to display on map quickly.
-    """
     query = (
         db.query(
             models.Sighting,
@@ -82,7 +74,6 @@ async def get_sightings_sample(db: Session = Depends(get_db), limit: int = 50):
         .limit(limit)
         .all()
     )
-
     response_data = []
     for s, lat, lon in query:
         response_data.append({
@@ -97,14 +88,8 @@ async def get_sightings_sample(db: Session = Depends(get_db), limit: int = 50):
         })
     return response_data
 
-
-
 @app.get("/api/sightings", response_model=List[schemas.Sighting], tags=["Sightings"])
-async def get_sightings_data(
-    db: Session = Depends(get_db),
-    skip: int = 0,
-    limit: int = 500
-):
+async def get_sightings_data(db: Session = Depends(get_db), skip: int = 0, limit: int = 500):
     try:
         query_results = (
             db.query(
@@ -136,15 +121,14 @@ async def get_sightings_data(
                 "description": row.description or "",
                 "habitat": row.habitat or ""
             }
-
             response_data.append({
                 "sighting_id": f"CMLRE-SIGHT-{row.id}",
                 "latitude": float(row.latitude) if row.latitude is not None else 0.0,
                 "longitude": float(row.longitude) if row.longitude is not None else 0.0,
                 "sighting_date": row.sighting_date,
-                "sea_surface_temp_c": float(row.sea_surface_temp_c) if row.sea_surface_temp_c is not None else None,
-                "salinity_psu": float(row.salinity_psu) if row.salinity_psu is not None else None,
-                "chlorophyll_mg_m3": float(row.chlorophyll_mg_m3) if row.chlorophyll_mg_m3 is not None else None,
+                "sea_surface_temp_c": float(row.sea_surface_temp_c) if row.sea_surface_temp_c else None,
+                "salinity_psu": float(row.salinity_psu) if row.salinity_psu else None,
+                "chlorophyll_mg_m3": float(row.chlorophyll_mg_m3) if row.chlorophyll_mg_m3 else None,
                 "species": species_data
             })
 
@@ -154,89 +138,54 @@ async def get_sightings_data(
         logging.error(f"Error fetching sightings: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
-
+# --- Classify Otolith ---
 @app.post("/api/classify_otolith", tags=["AI Models"])
-async def classify_otolith_image(
-    db: Session = Depends(get_db),
-    minio: Minio = Depends(get_minio_client),
-    file: UploadFile = File(...)
-):
+async def classify_otolith_image(db: Session = Depends(get_db),
+                                 minio: Minio = Depends(get_minio_client),
+                                 file: UploadFile = File(...)):
     try:
         contents = await file.read()
-        
-        # 1. Test the classifier
         prediction_results = otolith_classifier.predict(contents)
-        
-        # 2. Prepare file for MinIO
         file_extension = file.filename.split('.')[-1]
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         object_name = f"{prediction_results['predicted_species'].replace(' ', '_')}/{unique_filename}"
-
         file.file.seek(0)
         file_size = len(contents)
-
-        # 3. Upload to MinIO
-        minio.put_object(
-            "otoliths",
-            object_name,
-            file.file,
-            file_size,
-            content_type=file.content_type
-        )
-
+        minio.put_object("otoliths", object_name, file.file, file_size, content_type=file.content_type)
         return prediction_results
-
     except Exception as e:
-        # This will print the full error to your console and return it in JSON
-        print("Error in classify_otolith_image:", str(e))
+        logging.error(f"Error in classify_otolith_image: {e}", exc_info=True)
         return {"error": str(e)}
 
-
+# --- Hypotheses ---
 @app.get("/api/hypotheses", response_model=dict, tags=["X-Factor"])
 async def get_ai_hypotheses(db: Session = Depends(get_db)):
-    """
-    Analyzes the entire database to find the strongest statistical correlation
-    and uses a Generative AI model to formulate a natural language hypothesis.
-    """
     correlation_finding = analysis_service.find_strongest_correlation(db)
-
     if correlation_finding.get("species_id"):
         species = db.query(models.Species).filter(models.Species.id == correlation_finding["species_id"]).first()
         if species:
             correlation_finding["species_name"] = species.common_name
-
     hypothesis_text = llm_service.generate_hypothesis_from_finding(correlation_finding)
+    return {"hypothesis": hypothesis_text, "source_finding": correlation_finding}
 
-    return {
-        "hypothesis": hypothesis_text,
-        "source_finding": correlation_finding
-    }
-
+# --- Conversational AI ---
 class ChatRequest(BaseModel):
     user_input: str
-    context: Optional[str] = ""
+    context: Optional[str] = None
 
 class ChatResponse(BaseModel):
     reply: str
 
-@app.get("/")
-async def root():
-    return {"message": "TATTVA backend running!"}
-
 @app.post("/api/chat", response_model=ChatResponse, tags=["Conversational AI"])
 async def chat_endpoint(request: ChatRequest):
-    """
-    Generate a conversational response using Gemini LLM.
-    """
+    logging.info(f"Received chat request: {request.user_input}")
     try:
-        # Logging input
-        logging.info(f"Received chat request: {request.user_input}")
-        response_text = generate_chat_response(
+        response_text = llm_service.generate_chat_response(
             user_input=request.user_input,
             context=request.context or ""
         )
         logging.info(f"Generated response: {response_text}")
-        return {"reply": response_text}
+        return ChatResponse(reply=response_text)
     except Exception as e:
         logging.error(f"Error generating chat response: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        return ChatResponse(reply="Sorry, I couldn't generate a response at this time.")
