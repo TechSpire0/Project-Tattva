@@ -1,3 +1,4 @@
+//src/components/layouts/Sidebar.jsx
 import React from "react";
 import { NavLink } from "react-router-dom";
 import logo from "../../assets/Tattva.png";
@@ -52,10 +53,7 @@ function Sidebar({ sidebarOpen, onNavLinkClick, onToggleSidebar }) {
       {/* Sidebar Links */}
       <nav>
         <ul>
-          {[
-            { to: "/chat", label: "Chat" },
-            { to: "/workspace", label: "Workspace" },
-          ].map((item) => (
+          {[{ to: "/chat", label: "Chat" }].map((item) => (
             <li className="mb-2" key={item.to}>
               <NavLink
                 to={item.to}

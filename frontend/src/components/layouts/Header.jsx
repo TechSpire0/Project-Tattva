@@ -1,3 +1,4 @@
+//src/components/layouts/Header.jsx
 import React from "react";
 import { NavLink } from "react-router-dom";
 import Teamlogo from "../../assets/TechSpire.png";
@@ -48,7 +49,6 @@ function Header({ sidebarOpen, onToggleSidebar }) {
             { to: "/", label: "Dashboard" },
             // { to: "/edna-browser", label: "eDNA Browser" },
             { to: "/otolith-classifier", label: "Otolith Classifier" },
-            { to: "/data-upload", label: "Data Upload" },
           ].map((item) => (
             <NavLink
               key={item.to}

@@ -1,3 +1,4 @@
+//src/components/dashboard/InsightsPanel.jsx
 import React from "react";
 import useApi from "../../hooks/useApi";
 import apiClient from "../../services/apiClient";

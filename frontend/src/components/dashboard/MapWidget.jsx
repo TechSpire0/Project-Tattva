@@ -1,13 +1,15 @@
-import React, { useState } from "react";
+//src/components/dashboard/MapWidget.jsx
+
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import apiClient from "../../services/apiClient";
 import useApi from "../../hooks/useApi";
-
 // Icon path correction
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { use } from "react";
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -38,12 +40,16 @@ const tileLayers = {
   // }
 };
 
-const getSightingsData = () => apiClient.get("/sightings_sample?limit=50");
-
+const getSightingsData = () => apiClient.get("/sightings?skip=0&limit=500");
 function MapWidget() {
   const { data: sightings, loading, error } = useApi(getSightingsData);
   const [activeLayer, setActiveLayer] = useState("standard");
   const initialPosition = [20.5937, 78.9629];
+  useEffect(() => {
+    if (sightings) {
+      console.log("Sightings data:", sightings);
+    }
+  }, [sightings]);
 
   if (loading) {
     return (

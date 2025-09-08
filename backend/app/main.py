@@ -41,7 +41,7 @@ async def custom_swagger_ui_html():
     )
 
 # --- CORS ---
-origins = ["http://localhost:5173"]
+origins = ["http://localhost:5173", "http://localhost:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -61,35 +61,9 @@ async def get_all_species(db: Session = Depends(get_db)):
     return db.query(models.Species).all()
 
 # --- Sightings ---
-@app.get("/api/sightings_sample", response_model=List[schemas.Sighting], tags=["Sightings"])
-async def get_sightings_sample(db: Session = Depends(get_db), limit: int = 50):
-    query = (
-        db.query(
-            models.Sighting,
-            func.ST_Y(models.Sighting.location).label("latitude"),
-            func.ST_X(models.Sighting.location).label("longitude")
-        )
-        .filter(models.Sighting.location.isnot(None))
-        .order_by(func.random())
-        .limit(limit)
-        .all()
-    )
-    response_data = []
-    for s, lat, lon in query:
-        response_data.append({
-            "sighting_id": f"CMLRE-SIGHT-{s.id}",
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "sighting_date": s.sighting_date,
-            "sea_surface_temp_c": float(s.sea_surface_temp_c) if s.sea_surface_temp_c else None,
-            "salinity_psu": float(s.salinity_psu) if s.salinity_psu else None,
-            "chlorophyll_mg_m3": float(s.chlorophyll_mg_m3) if s.chlorophyll_mg_m3 else None,
-            "species": s.species,
-        })
-    return response_data
 
 @app.get("/api/sightings", response_model=List[schemas.Sighting], tags=["Sightings"])
-async def get_sightings_data(db: Session = Depends(get_db), skip: int = 0, limit: int = 500):
+async def get_sightings_data(db: Session = Depends(get_db), limit: int = 500):
     try:
         query_results = (
             db.query(
@@ -107,13 +81,17 @@ async def get_sightings_data(db: Session = Depends(get_db), skip: int = 0, limit
                 func.ST_X(models.Sighting.location).label("longitude")
             )
             .outerjoin(models.Species, models.Sighting.species_id == models.Species.id)
-            .offset(skip)
+            .filter(models.Sighting.location.isnot(None))  # Ensure location is not null
+            .order_by(func.random())  # Randomize for variety
             .limit(limit)
             .all()
         )
 
         response_data = []
         for row in query_results:
+            # Validate coordinates and skip invalid ones
+            if row.latitude is None or row.longitude is None:
+                continue
             species_data = {
                 "id": row.species_id or 0,
                 "scientific_name": row.scientific_name or "Unknown",
@@ -123,8 +101,8 @@ async def get_sightings_data(db: Session = Depends(get_db), skip: int = 0, limit
             }
             response_data.append({
                 "sighting_id": f"CMLRE-SIGHT-{row.id}",
-                "latitude": float(row.latitude) if row.latitude is not None else 0.0,
-                "longitude": float(row.longitude) if row.longitude is not None else 0.0,
+                "latitude": float(row.latitude),
+                "longitude": float(row.longitude),
                 "sighting_date": row.sighting_date,
                 "sea_surface_temp_c": float(row.sea_surface_temp_c) if row.sea_surface_temp_c else None,
                 "salinity_psu": float(row.salinity_psu) if row.salinity_psu else None,
@@ -137,6 +115,7 @@ async def get_sightings_data(db: Session = Depends(get_db), skip: int = 0, limit
     except Exception as e:
         logging.error(f"Error fetching sightings: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
 
 # --- Classify Otolith ---
 @app.post("/api/classify_otolith", tags=["AI Models"])

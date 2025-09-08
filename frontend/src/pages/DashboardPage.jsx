@@ -1,3 +1,4 @@
+//src/pages/DashboardPage.jsx
 import React, { useState, useEffect } from "react";
 import apiClient from "../services/apiClient";
 
@@ -5,7 +6,6 @@ import apiClient from "../services/apiClient";
 import MapWidget from "../components/dashboard/MapWidget";
 import InsightsPanel from "../components/dashboard/InsightsPanel";
 import ChatWidget from "../components/dashboard/ChartWidget";
-import FilterPanel from "../components/dashboard/FilterPanel";
 import ChartWidget from "../components/dashboard/ChartWidget";
 
 function DashboardPage() {
@@ -20,12 +20,15 @@ function DashboardPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await apiClient.get("/sightings");
+      const response = await apiClient.get("/sightings", {
+        params: { limit: 1000 }, // Or more, depending on performance
+      });
+      console.log("Fetched sightings:", response.data);
       setAllSightings(response.data);
-      setFilteredSightings(response.data); // Initially, show all data
+      setFilteredSightings(response.data);
     } catch (err) {
       setError("Failed to load initial map data.");
-      console.error(err);
+      console.error("Fetch error:", err);
     } finally {
       setIsLoading(false);
     }
@@ -51,22 +54,13 @@ function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-gray-800">
-          CMLRE Species Explorer
+          TATTVA: Transformative AI for Taxonomic, Temporal & Visual Analytics
         </h1>
         <p className="mt-1 text-gray-600">
-          Welcome back, Jayanth. Use the filters below to explore the marine
-          biodiversity data.
+          Welcome back, Researcher. Explore the marine biodiversity data of
+          India.
         </p>
       </div>
-
-      {/* The Filter Panel is positioned here, above the map. */}
-      {/* It will call handleFilterChange when the user clicks "Go". */}
-      {/* We pass it the original full dataset to perform its filtering on. */}
-      <FilterPanel
-        masterData={allSightings}
-        onFilterChange={handleFilterChange}
-        isFiltering={isLoading}
-      />
 
       {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
