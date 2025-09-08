@@ -183,7 +183,6 @@ TATTVA/
 ├── backend/          # Python services, APIs, and database logic
 ├── frontend/         # React-based user interface
 ├── local_data/       # Storage for MinIO and ChromaDB
-├── .env.example     # Template environment configuration
 ├── README.md        # This documentation
 ```
 

@@ -38,7 +38,7 @@ const tileLayers = {
   // }
 };
 
-const getSightingsData = () => apiClient.get("/sightings");
+const getSightingsData = () => apiClient.get("/sightings_sample?limit=50");
 
 function MapWidget() {
   const { data: sightings, loading, error } = useApi(getSightingsData);

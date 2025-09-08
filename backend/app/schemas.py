@@ -2,17 +2,14 @@ from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 from datetime import date
 
-# This schema is defined first, as it's needed by the Sighting schema.
 class Species(BaseModel):
     id: int
     scientific_name: str
-    common_name: str
+    common_name: Optional[str] = None
     description: Optional[str] = None
     habitat: Optional[str] = None
     model_config = ConfigDict(from_attributes=True)
 
-# FINAL SIMPLIFIED Sighting Schema
-# No validators, no complex logic. This is a simple data container.
 class Sighting(BaseModel):
     sighting_id: str
     latitude: float
@@ -27,5 +24,4 @@ class Sighting(BaseModel):
 class PaginatedSpeciesResponse(BaseModel):
     count: int
     results: List[Species]
-
     model_config = ConfigDict(from_attributes=True)

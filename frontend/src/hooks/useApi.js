@@ -1,6 +1,6 @@
 // src/hooks/useApi.js
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 // This is a custom hook. Its name must start with 'use'.
 // It takes one argument: 'apiFunc', which is the function that will make the actual API call.
@@ -22,7 +22,7 @@ const useApi = (apiFunc) => {
       try {
         // Set loading to true before we start the request.
         setLoading(true);
-        
+
         // Reset any previous errors.
         setError(null);
 
@@ -31,12 +31,10 @@ const useApi = (apiFunc) => {
 
         // If the call is successful, we update our 'data' state with the response data.
         setData(response.data);
-
       } catch (err) {
         // If an error occurs during the API call, we catch it.
         // We update our 'error' state with the error object.
         setError(err);
-
       } finally {
         // The 'finally' block runs whether the request succeeded or failed.
         // We set loading to false because the request is now complete.

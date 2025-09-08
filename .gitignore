@@ -1,0 +1,7 @@
+/local_data/
+/data/
+/backend/ml_model_data/
+
+.vscode/
+.idea/
+.DS_Store
