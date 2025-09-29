@@ -7,7 +7,7 @@ function ChatInterface() {
   const [messages, setMessages] = useState([
     {
       sender: "ai",
-      text: "Hello! I am the TATTVA Research Assistant. How can I help you analyze the marine data today?",
+      text: "Hello! I am the **TATTVA Research Assistant**. How can I help you analyze the marine data today?",
     },
   ]);
   const [inputValue, setInputValue] = useState("");

@@ -194,8 +194,6 @@ async def get_ai_hypotheses(db: Session = Depends(get_db)):
 
 
 
-
-# --- Conversational AI ---
 class ChatRequest(BaseModel):
     user_input: str
     context: Optional[str] = None
@@ -203,13 +201,14 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
 
+
 @app.post("/api/chat", response_model=ChatResponse, tags=["Conversational AI"])
 async def chat_endpoint(request: ChatRequest, db: Session = Depends(get_db)):
     logging.info(f"Received chat request: {request.user_input}")
     try:
         response_text = llm_service.generate_chat_response(
             user_input=request.user_input,
-            db=db,   # ✅ pass session
+            db=db,   
             context=request.context or ""
         )
         logging.info(f"Generated response: {response_text}")

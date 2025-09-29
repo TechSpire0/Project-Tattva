@@ -6,6 +6,8 @@ import redis
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app import models
+import chromadb
+from chromadb.utils import embedding_functions
 
 # Load the API key and configure the client
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -23,6 +25,19 @@ redis_client = redis.Redis(
 
 def cached_hypothesis_key():
     return "tattva:hypothesis:latest"
+
+# === Setup Chroma ===
+chroma_client = chromadb.HttpClient(host="localhost", port=8001)
+
+# Load the collection (should already exist after ingestion)
+collection = chroma_client.get_or_create_collection(
+    name="species_data",
+    embedding_function=embedding_functions.DefaultEmbeddingFunction()
+)
+
+# ------------------------
+# Hypothesis Generator
+# -----------------------
 
 def generate_hypothesis_from_finding(correlation_finding: dict) -> str:
     cache_key = cached_hypothesis_key()
@@ -64,50 +79,62 @@ def generate_hypothesis_from_finding(correlation_finding: dict) -> str:
         return "Failed to generate hypothesis due to an API error."
 
 
-# -----------------------------
-# Conversational AI with DB context
-# -----------------------------
-
+# ------------------------
+# Conversational AI (Hybrid DB + RAG)
+# ------------------------
 def generate_chat_response(user_input: str, db: Session, context: str = "") -> str:
     """
-    Generate a conversational response from Gemini, enriched with DB context.
+    Generate an answer using BOTH Postgres (DB) and Chroma (RAG).
     """
-    # Pull top species stats
+
+    # --- Step 1: Retrieve semantic docs from Chroma ---
     try:
-        species_counts = db.query(
-            models.Species.scientific_name, func.count(models.Sighting.id)
-        ).join(
-            models.Sighting, models.Sighting.species_id == models.Species.id
-        ).group_by(
-            models.Species.scientific_name
-        ).order_by(
-            func.count(models.Sighting.id).desc()
-        ).limit(5).all()
-
-        species_summary = (
-            ", ".join([f"{name} ({count} sightings)" for name, count in species_counts])
-            if species_counts else "No species data available"
-        )
+        results = collection.query(query_texts=[user_input], n_results=5)
+        retrieved_docs = results.get("documents", [[]])[0]
+        rag_context = "\n".join(retrieved_docs) if retrieved_docs else "No related documents found."
     except Exception as e:
-        print(f"[Chat] DB query failed: {e}")
-        species_summary = "Species data unavailable due to a database error."
+        print(f"Error querying Chroma: {e}")
+        rag_context = "No related documents available."
 
-    # Build prompt
+    # --- Step 2: Retrieve structured data from DB ---
+    db_context = ""
+    try:
+        if "species" in user_input.lower():
+            species_list = db.query(models.Species).limit(10).all()
+            db_context = "Observed species: " + ", ".join([s.scientific_name for s in species_list])
+        elif "sighting" in user_input.lower() or "vizag" in user_input.lower():
+            sightings = db.query(models.Sighting).limit(10).all()
+            db_context = f"Sample sightings: {len(sightings)} records (showing 10)."
+        else:
+            db_context = "No specific DB query matched."
+    except Exception as e:
+        print(f"Error querying DB: {e}")
+        db_context = "Failed to fetch live data."
+
+    # --- Step 3: Merge into a prompt ---
     prompt = f"""
     You are a helpful marine biology research assistant.
 
-    Context:
-    - Top observed species: {species_summary}
-    {context}
+    --- User Question ---
+    {user_input}
 
-    User Question: {user_input}
+    --- Live Database Facts ---
+    {db_context}
 
-    Provide a clear, concise, and domain-aware answer.
+    --- Retrieved Knowledge (RAG) ---
+    {rag_context}
+
+    --- Instructions ---
+    1. Use both DB facts and retrieved knowledge to answer.
+    2. If DB has numbers/stats, include them.
+    3. If RAG has descriptions, use them.
+    4. Be clear, concise, and scientific.
     """
 
+    # --- Step 4: Call Gemini ---
     try:
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        print(f"Error calling Gemini API for chat: {e}")
+        print(f"Error calling Gemini API: {e}")
         return "Sorry, I couldn't generate a response at this time."
