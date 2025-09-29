@@ -1,3 +1,5 @@
+#backend/bulk_upload.py
+
 import pandas as pd
 from app.database import SessionLocal
 from app.models import Species, Sighting

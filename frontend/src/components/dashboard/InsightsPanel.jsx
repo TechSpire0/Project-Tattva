@@ -1,4 +1,4 @@
-//src/components/dashboard/InsightsPanel.jsx
+// src/components/dashboard/InsightsPanel.jsx
 import React from "react";
 import useApi from "../../hooks/useApi";
 import apiClient from "../../services/apiClient";
@@ -49,6 +49,19 @@ function InsightsPanel() {
     );
   }
 
+  // Extract safe values with defaults
+  const correlation =
+    hypothesisData?.source_finding?.correlation !== undefined &&
+    hypothesisData?.source_finding?.correlation !== null
+      ? hypothesisData.source_finding.correlation.toFixed(2)
+      : "N/A";
+
+  const variable =
+    hypothesisData?.source_finding?.variable || "Unknown Variable";
+
+  const species =
+    hypothesisData?.source_finding?.species_name || "Unknown Species";
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md h-full">
       {/* Header with Chatbot button at the end */}
@@ -65,33 +78,8 @@ function InsightsPanel() {
       {hypothesisData ? (
         <div className="animate-fade-in">
           <p className="text-lg text-gray-700 italic">
-            "{hypothesisData.hypothesis}"
+            "{hypothesisData.hypothesis || "No hypothesis available."}"
           </p>
-
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <h5 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
-              Source Data Finding
-            </h5>
-            <div className="mt-2 text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-              <p>
-                A correlation of{" "}
-                <strong>
-                  {hypothesisData.source_finding.correlation.toFixed(2)}
-                </strong>{" "}
-                was found between
-                <span className="font-semibold text-indigo-600">
-                  {" "}
-                  {hypothesisData.source_finding.variable}
-                </span>{" "}
-                and the population of
-                <span className="font-semibold text-indigo-600">
-                  {" "}
-                  {hypothesisData.source_finding.species_name}
-                </span>
-                .
-              </p>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="text-center text-gray-500 py-8">

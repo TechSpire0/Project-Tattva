@@ -1,16 +1,20 @@
-//src/components/dashboard/MapWidget.jsx
+// src/components/dashboard/MapWidget.jsx
 
-import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import React, { useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+} from "react-leaflet";
 import apiClient from "../../services/apiClient";
-import useApi from "../../hooks/useApi";
-// Icon path correction
 import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { use } from "react";
 
+// Fix Leaflet icon paths
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
@@ -27,47 +31,48 @@ const tileLayers = {
   satellite: {
     imagery: {
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-      attribution: "Tiles &copy; Esri",
+      attribution: "Tiles © Esri",
     },
     labels: {
       url: "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-      attribution: "Labels &copy; Esri",
+      attribution: "Labels © Esri",
     },
   },
-  // dark: {
-  //   url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  //   attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-  // }
 };
 
-const getSightingsData = () => apiClient.get("/sightings?skip=0&limit=500");
+// Component that listens for map moves and fetches sightings
+function FetchSightings({ setSightings }) {
+  useMapEvents({
+    moveend: async (map) => {
+      const bounds = map.target.getBounds();
+      const minLat = bounds.getSouth();
+      const maxLat = bounds.getNorth();
+      const minLon = bounds.getWest();
+      const maxLon = bounds.getEast();
+
+      try {
+        const res = await apiClient.get("/sightings", {
+          params: {
+            min_lat: minLat,
+            min_lon: minLon,
+            max_lat: maxLat,
+            max_lon: maxLon,
+            limit: 2000, // you can adjust depending on performance
+          },
+        });
+        setSightings(res.data);
+      } catch (err) {
+        console.error("Failed to fetch sightings", err);
+      }
+    },
+  });
+  return null;
+}
+
 function MapWidget() {
-  const { data: sightings, loading, error } = useApi(getSightingsData);
   const [activeLayer, setActiveLayer] = useState("standard");
-  const initialPosition = [20.5937, 78.9629];
-  useEffect(() => {
-    if (sightings) {
-      console.log("Sightings data:", sightings);
-    }
-  }, [sightings]);
-
-  if (loading) {
-    return (
-      <div className="h-full min-h-[500px] flex justify-center items-center bg-gray-100 rounded-lg shadow-md">
-        <p>Loading Map Data...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-full min-h-[500px] flex justify-center items-center bg-red-50 text-red-700 rounded-lg shadow-md">
-        <p>Error: Could not load map data.</p>
-      </div>
-    );
-  }
-
-  const validSightings = Array.isArray(sightings) ? sightings : [];
+  const [sightings, setSightings] = useState([]);
+  const initialPosition = [20.5937, 78.9629]; // India center
 
   return (
     <div className="relative h-[500px] w-full rounded-lg shadow-md overflow-hidden">
@@ -101,18 +106,15 @@ function MapWidget() {
         style={{ height: "100%", width: "100%" }}
         className="z-0"
       >
-        {/* Standard / Dark */}
+        {/* Standard Layer */}
         {activeLayer === "standard" && (
           <TileLayer
             url={tileLayers.standard.url}
             attribution={tileLayers.standard.attribution}
           />
         )}
-        {/* {activeLayer === 'dark' && (
-          <TileLayer url={tileLayers.dark.url} attribution={tileLayers.dark.attribution} />
-        )} */}
 
-        {/* Satellite with labels */}
+        {/* Satellite Layer */}
         {activeLayer === "satellite" && (
           <>
             <TileLayer
@@ -126,17 +128,17 @@ function MapWidget() {
           </>
         )}
 
+        {/* Trigger API fetch on map move */}
+        <FetchSightings setSightings={setSightings} />
+
         {/* Markers */}
-        {validSightings.map((sighting) => (
+        {sightings.map((sighting) => (
           <Marker
             key={sighting.sighting_id}
             position={[sighting.latitude, sighting.longitude]}
           >
             <Popup>
               <div className="font-sans w-48">
-                <h4 className="font-bold text-base mb-1 text-gray-800">
-                  {sighting.species.common_name}
-                </h4>
                 <p className="text-sm text-gray-600 italic mb-2">
                   {sighting.species.scientific_name}
                 </p>

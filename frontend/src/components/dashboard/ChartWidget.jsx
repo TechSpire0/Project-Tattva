@@ -28,7 +28,7 @@ function ChartWidget() {
     // Step 1: Aggregate the data.
     // We group all temperature readings by species name.
     const speciesData = sightings.reduce((acc, sighting) => {
-      const speciesName = sighting.species.common_name;
+      const speciesName = sighting.species.scientific_name;
       const temp = sighting.sea_surface_temp_c;
 
       if (!acc[speciesName]) {
@@ -82,7 +82,9 @@ function ChartWidget() {
 
   return (
     <div className="bg-white p-4 rounded-lg shadow-md">
-      <h1 className="text-lg font-semibold mb-4 text-gray-800">Heading</h1>
+      <h1 className="text-lg font-semibold mb-4 text-gray-800">
+        Average Sea Surface Temperature by Species
+      </h1>
       {chartData ? (
         <Plot
           data={[chartData]}

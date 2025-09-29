@@ -1,6 +1,7 @@
 // frontend/src/features/conversation/chatInterface.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { sendChatMessage } from "./chatService";
+import ReactMarkdown from "react-markdown"; // 👈 NEW
 
 function ChatInterface() {
   const [messages, setMessages] = useState([
@@ -26,9 +27,7 @@ function ChatInterface() {
     setIsLoading(true);
 
     try {
-      // Optionally fetch dynamic context from database here
-      const context = ""; // Placeholder for future dynamic context
-
+      const context = ""; // future DB context
       const aiResponseText = await sendChatMessage(inputValue, context);
       const aiMessage = { sender: "ai", text: aiResponseText };
       setMessages((prev) => [...prev, aiMessage]);
@@ -55,13 +54,14 @@ function ChatInterface() {
               }`}
             >
               <div
-                className={`p-3 rounded-lg max-w-lg ${
+                className={`p-3 rounded-lg max-w-lg prose ${
                   msg.sender === "user"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-blue-600 text-white prose-invert"
                     : "bg-gray-200 text-black"
                 }`}
               >
-                <p>{msg.text}</p>
+                {/* 👇 Render as Markdown */}
+                <ReactMarkdown>{msg.text}</ReactMarkdown>
               </div>
             </div>
           ))}
