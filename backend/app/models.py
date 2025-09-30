@@ -1,9 +1,11 @@
-# 1. Import necessary components from SQLAlchemy and GeoAlchemy2.
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Date, Numeric
+# backend/app/models.py
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, TIMESTAMP, Date, Numeric, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from geoalchemy2 import Geometry
 from .database import Base
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Index
 
 class Species(Base):
     __tablename__ = "species"
@@ -41,3 +43,21 @@ class Otolith(Base):
     collection_date = Column(Date)
     age_estimation_years = Column(Integer)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+
+
+class EdnaSequence(Base):
+    __tablename__ = "edna_sequences"
+
+    id = Column(Integer, primary_key=True, index=True)
+    header = Column(Text, nullable=False)
+    sequence = Column(Text, nullable=False, index=True)   # <-- add index
+    species_name = Column(String, nullable=True)
+    # meta = Column(JSONB, default={})
+    # workspace_id = Column(Integer, ForeignKey("workspaces.id"), nullable=True)
+    # uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # uploaded_at = Column(DateTime(timezone=True), server_default=func.now())
+
+# add explicit index too (optional, but recommended for large datasets)
+Index("idx_sequence_text", EdnaSequence.sequence)

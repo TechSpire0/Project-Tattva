@@ -1,234 +1,209 @@
-# 🌊 Project TATTVA
+# 🌊 TATTVA
 
 **Transformative AI for Taxonomic, Temporal & Visual Analytics**
-
-Project TATTVA is an intelligent, full-stack web application designed to unify, analyze, and visualize marine biodiversity data for CMLRE. By leveraging predictive and generative AI, the platform accelerates scientific discovery and environmental research.
-
-This repository contains the complete codebase, including the React frontend and Python-based multi-service backend architecture.
+_An AI-driven marine biodiversity research platform (SIH 2025 project)_
 
 ---
 
-## 🚀 Local Development Setup Guide
+## 📖 Overview
 
-Follow the steps below to set up the TATTVA development environment on your **Windows 11** machine.
-
-### ✅ 1. Prerequisites
-
-Ensure the following software is installed and configured:
-
-- ✅ **Git** – For version control
-- ✅ **Python 3.11** – Added to your system PATH
-- ✅ **Node.js** – Latest LTS version recommended
-- ✅ **PostgreSQL 15+** – Relational database
-- ✅ **pgAdmin 4** – GUI for PostgreSQL
-- ✅ **MinIO Server** – Object storage (`minio.exe`)
-- ✅ **Ubuntu on WSL 2** – For running Redis server
+TATTVA is an AI-powered platform designed to help marine researchers analyze, visualize, and collaborate on biodiversity data in Indian waters.
+It combines **geospatial visualization, machine learning, LLM-based conversational AI, and collaborative research tools** into a single platform.
 
 ---
 
-### ✅ 2. Initial Setup
+## ✨ Features
 
-#### Clone the Repository
+- **Interactive Dashboard**
 
-```bash
-git clone <your_new_repo_url>
-cd TATTVA
+  - 🌍 Dynamic map with **78k+ species sightings** (PostGIS + React Leaflet).
+  - 📊 Charts summarizing species distributions & environmental variables.
+  - 💡 AI-generated hypotheses from correlations in the data.
+
+- **Conversational AI Assistant**
+
+  - 🤖 Built on **Google Gemini + ChromaDB (RAG)**.
+  - Can answer **oceanography questions** + **queries grounded in the sightings database**.
+  - Supports **Markdown responses** for clean formatting.
+
+- **Otolith Classifier (ML Model)**
+
+  - 🐟 Upload otolith (fish earbone) images.
+  - AI predicts the fish species.
+  - Images are stored in **MinIO** for backup.
+
+- **Data Upload Module** (coming soon 🚧)
+
+  - Upload new CSV datasets (sightings, species, environmental data).
+  - Validates, stores in Postgres + MinIO.
+  - Automatically updates RAG index for text metadata.
+
+- **Collaborative Workspace** (coming soon 🚧)
+
+  - Multi-user annotations on sightings.
+  - Commenting & shared insights.
+  - Researcher-specific workspaces.
+
+---
+
+## 🏗️ Architecture
+
+**Backend:**
+
+- FastAPI (Python)
+- PostgreSQL + PostGIS (78k sightings)
+- Redis (caching)
+- MinIO (object storage)
+- ChromaDB (vector DB for RAG)
+- Google Gemini (LLM API)
+
+**Frontend:**
+
+- React + Vite + Tailwind
+- React Leaflet (map)
+- Plotly (charts)
+- React Markdown (for chat + insights)
+
+---
+
+## 📂 Project Structure
+
+```
+TATTVA/
+├── backend/
+│   ├── app/
+│   │   ├── main.py              # FastAPI entry point
+│   │   ├── models.py            # SQLAlchemy ORM models
+│   │   ├── schemas.py           # Pydantic schemas
+│   │   ├── core/
+│   │   │   ├── llm_service.py   # Gemini + RAG integration
+│   │   │   ├── analysis_service.py # Correlation + insights
+│   │   │   ├── minio_client.py  # MinIO integration
+│   │   └── ml/
+│   │       └── classifier.py    # Otolith ML model
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── dashboard/
+│   │   │   │   ├── MapWidget.jsx
+│   │   │   │   ├── InsightsPanel.jsx
+│   │   │   │   └── ChartWidget.jsx
+│   │   │   └── layouts/
+│   │   │       ├── Header.jsx
+│   │   │       └── Sidebar.jsx
+│   │   ├── features/conversation/
+│   │   │   ├── chatInterface.jsx
+│   │   │   └── chatService.js
+│   │   ├── pages/
+│   │   │   ├── DashboardPage.jsx
+│   │   │   ├── ConversationalAIPage.jsx
+│   │   │   └── OtolithClassifierPage.jsx
+│   │   └── App.jsx
+│   └── package.json
+│
+└── README.md
 ```
 
-#### Set Up the Backend
+---
+
+## ⚙️ Setup
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/<your-username>/tattva.git
+cd tattva
+```
+
+### 2. Backend Setup
 
 ```bash
 cd backend
 python -m venv venv
-.\venv\Scripts\activate
+source venv/bin/activate    # (Linux/Mac)
+venv\Scripts\activate       # (Windows)
+
 pip install -r requirements.txt
 ```
 
-#### Set Up the Frontend
+#### Configure environment variables (`.env`)
 
-```bash
-cd ..\frontend
-npm install
+```ini
+# Database
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/marinedb
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# MinIO
+MINIO_ENDPOINT=localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=otoliths
+
+# Gemini API
+GEMINI_API_KEY=your_api_key_here
+
+# ChromaDB
+CHROMA_HOST=localhost
+CHROMA_PORT=8001
+CHROMA_PATH=local_data/chroma_data
 ```
 
-#### Configure Environment Variables
-
-1. Copy the example environment file:
-
-   ```bash
-   cd backend
-   copy .env.example .env
-   ```
-
-2. Edit `.env` to include your:
-
-   - PostgreSQL password
-   - Google Gemini API key
-
----
-
-### ✅ 3. Manual Database Preparation
-
-#### Start PostgreSQL
-
-Make sure the PostgreSQL service is running.
-
-#### Create the Database
-
-1. Open **pgAdmin 4** and connect to your local PostgreSQL server.
-2. Right-click **Databases** → **Create > Database...**
-3. Name it `marinedb`.
-
-#### Enable PostGIS Extension
-
-1. In pgAdmin, select `marinedb`.
-2. Open **Query Tool**.
-3. Run:
-
-   ```sql
-   CREATE EXTENSION postgis;
-   ```
-
-#### Create Tables and Seed Data
+#### Run backend
 
 ```bash
-cd backend
-.\venv\Scripts\activate
-alembic upgrade head
-python seed.py
-```
-
-> ⚙ **Note**: You will run `ingest_vectors.py` after starting ChromaDB in the next section.
-
----
-
-### ✅ 4. Launching the Application
-
-You need to open **five terminals** and run the services in parallel. These terminals must remain open while the application is running.
-
----
-
-#### 📒 Terminal 1 – Redis (Ubuntu WSL)
-
-```bash
-sudo service redis-server start
-```
-
----
-
-#### 📒 Terminal 2 – MinIO (Windows CMD)
-
-```bash
-cd path\to\minio
-minio.exe server "D:\path\to\local_data\minio_data" --console-address ":9001"
-```
-
----
-
-#### 📒 Terminal 3 – ChromaDB (Windows CMD)
-
-```bash
-cd TATTVA
-.\backend\venv\Scripts\activate
-python -m chroma run --host localhost --port 8001 --path "local_data\chroma_data"
-```
-
----
-
-#### 📒 Terminal 4 – Backend (Windows CMD)
-
-```bash
-cd backend
-.\venv\Scripts\activate
 uvicorn app.main:app --reload
 ```
 
----
-
-#### 📒 Terminal 5 – Frontend (Windows CMD)
+### 3. Frontend Setup
 
 ```bash
 cd frontend
-npm start
+npm install
+npm run dev
 ```
 
----
-
-### ✅ 5. Final Data Ingestion
-
-Once all services are running, open a new terminal and run the following:
+### 4. Run ChromaDB
 
 ```bash
-cd backend
-.\venv\Scripts\activate
-python ingest_vectors.py
+chroma run --host localhost --port 8001 --path "local_data/chroma_data"
 ```
 
 ---
 
-## 🌐 Accessing the Application
+## 🚀 Usage
 
-Open your browser and visit:
+- Visit **Dashboard** → View sightings map, charts, and AI insights.
+- Visit **Conversational AI** → Ask questions like:
 
-[http://localhost:3000](http://localhost:3000)
+  - _“List out fishes seen in Vizag Bay in 2023”_
+  - _“What environmental conditions do dolphins prefer?”_
 
-The TATTVA platform is now fully operational and ready for exploration!
-
----
-
-## 📂 Directory Structure
-
-```
-TATTVA/
-├── backend/          # Python services, APIs, and database logic
-├── frontend/         # React-based user interface
-├── local_data/       # Storage for MinIO and ChromaDB
-├── README.md        # This documentation
-```
+- Visit **Otolith Classifier** → Upload an otolith image.
 
 ---
 
-## 🔧 Tech Stack
+## 🔮 Roadmap
 
-- **Frontend** – React, Node.js
-- **Backend** – Python, FastAPI, Uvicorn
-- **Database** – PostgreSQL with PostGIS
-- **Cache** – Redis
-- **Vector Store** – ChromaDB
-- **Object Storage** – MinIO
-- **AI Integration** – Google Gemini API
+- ✅ Map, charts, AI hypotheses, chat, otolith classifier
+- 🚧 Data Upload page (CSV ingestion + MinIO + DB update + RAG reindex)
+- 🚧 Collaborative workspace (multi-user annotations + comments)
+- 🚧 User authentication & role-based access
 
 ---
 
-## 📃 Features
+## 👥 Team
 
-✔ Unifies marine biodiversity datasets
-✔ Enables spatial queries using PostGIS
-✔ Provides object storage for images and large files
-✔ Supports vector embeddings with ChromaDB
-✔ Incorporates AI-assisted research tools
-✔ Built with scalability and modularity in mind
+Developed for **Smart India Hackathon 2025** by Team TATTVA.
 
 ---
 
-## 📥 Next Steps
+## 📜 License
 
-- Expand dataset integration pipelines
-- Enhance AI models for predictive analytics
-- Improve frontend UI for data visualization
-- Collaborate with researchers and marine scientists
-- Optimize deployment workflows
-
----
-
-## 📔 License
-
-This project is released under the **MIT License**. Contributions are welcome!
-
----
-
-## 📨 Contact
-
-For any issues, suggestions, or contributions, feel free to reach out to the development team.
+MIT License – free to use and modify.
 
 ---
