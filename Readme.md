@@ -7,62 +7,62 @@ _An AI-driven marine biodiversity research platform (SIH 2025 project)_
 
 ## 📖 Overview
 
-TATTVA is an AI-powered platform designed to help marine researchers analyze, visualize, and collaborate on biodiversity data in Indian waters.
-It combines **geospatial visualization, machine learning, LLM-based conversational AI, and collaborative research tools** into a single platform.
+**TATTVA** is a full-stack AI-powered platform designed for marine researchers to analyze, visualize, and gain insights into biodiversity data.
+It combines **geospatial visualization, machine learning, LLM-based conversational AI, and eDNA analysis** into one integrated system.
 
 ---
 
 ## ✨ Features
 
-- **Interactive Dashboard**
+### 🗺️ Interactive Dashboard
 
-  - 🌍 Dynamic map with **78k+ species sightings** (PostGIS + React Leaflet).
-  - 📊 Charts summarizing species distributions & environmental variables.
-  - 💡 AI-generated hypotheses from correlations in the data.
+- Dynamic **map of 78k+ marine species sightings** (PostGIS + React Leaflet).
+- 📊 **Charts** for temporal trends, environmental factors, and species distribution.
+- 🔍 AI-generated **hypotheses** from statistical correlations.
 
-- **Conversational AI Assistant**
+### 💬 Conversational AI Assistant
 
-  - 🤖 Built on **Google Gemini + ChromaDB (RAG)**.
-  - Can answer **oceanography questions** + **queries grounded in the sightings database**.
-  - Supports **Markdown responses** for clean formatting.
+- Built on **Google Gemini + ChromaDB (RAG)**.
+- Answers **oceanographic & biodiversity questions**, grounded in the sightings database.
+- Supports **Markdown responses** for citations, lists, and tables.
 
-- **Otolith Classifier (ML Model)**
+### 🐟 Otolith Classifier
 
-  - 🐟 Upload otolith (fish earbone) images.
-  - AI predicts the fish species.
-  - Images are stored in **MinIO** for backup.
+- Upload **otolith (fish earbone) images**.
+- AI predicts the species + confidence score.
+- Images backed up in **MinIO**.
 
-- **Data Upload Module** (coming soon 🚧)
+### 🧬 eDNA Sequence Matching
 
-  - Upload new CSV datasets (sightings, species, environmental data).
-  - Validates, stores in Postgres + MinIO.
-  - Automatically updates RAG index for text metadata.
+- Upload or paste **FASTA (.fasta / .fa) sequences**.
+- Matches sequences with database records.
+- Supports sequence ingestion & species-level matching.
 
-- **Collaborative Workspace** (coming soon 🚧)
+### 🗂️ Data Upload Module
 
-  - Multi-user annotations on sightings.
-  - Commenting & shared insights.
-  - Researcher-specific workspaces.
+- Upload new **CSV datasets (species sightings, environment data)**.
+- Upload **FASTA eDNA datasets**.
+- Automatically validates, parses, stores in **Postgres + MinIO**, and updates indexes.
 
 ---
 
-## 🏗️ Architecture
+## 🏷️ Architecture
 
-**Backend:**
+**Backend**
 
 - FastAPI (Python)
-- PostgreSQL + PostGIS (78k sightings)
-- Redis (caching)
+- PostgreSQL + PostGIS
 - MinIO (object storage)
 - ChromaDB (vector DB for RAG)
 - Google Gemini (LLM API)
+- BioPython + Pandas (eDNA & CSV parsing)
 
-**Frontend:**
+**Frontend**
 
 - React + Vite + Tailwind
 - React Leaflet (map)
 - Plotly (charts)
-- React Markdown (for chat + insights)
+- React Markdown (chat rendering)
 
 ---
 
@@ -72,34 +72,31 @@ It combines **geospatial visualization, machine learning, LLM-based conversation
 TATTVA/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── models.py            # SQLAlchemy ORM models
-│   │   ├── schemas.py           # Pydantic schemas
+│   │   ├── main.py                # FastAPI entry
+│   │   ├── models.py              # SQLAlchemy models
+│   │   ├── schemas.py             # Pydantic schemas
 │   │   ├── core/
-│   │   │   ├── llm_service.py   # Gemini + RAG integration
-│   │   │   ├── analysis_service.py # Correlation + insights
-│   │   │   ├── minio_client.py  # MinIO integration
+│   │   │   ├── llm_service.py     # Gemini + RAG
+│   │   │   ├── analysis_service.py # Correlation insights
+│   │   │   ├── minio_client.py    # MinIO integration
 │   │   └── ml/
-│   │       └── classifier.py    # Otolith ML model
+│   │       └── classifier.py      # Otolith ML model
 │   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── dashboard/
-│   │   │   │   ├── MapWidget.jsx
-│   │   │   │   ├── InsightsPanel.jsx
-│   │   │   │   └── ChartWidget.jsx
-│   │   │   └── layouts/
-│   │   │       ├── Header.jsx
-│   │   │       └── Sidebar.jsx
-│   │   ├── features/conversation/
-│   │   │   ├── chatInterface.jsx
-│   │   │   └── chatService.js
-│   │   ├── pages/
+│   │   │   ├── dashboard/         # Map, charts, insights
+│   │   │   └── layouts/           # Header, About, Home
+│   │   ├── features/
+│   │   │   ├── conversation/      # Chat
+│   │   │   └── dataUpload/        # FileUploader
+│   │   ├── pages/                 # Page-level components
 │   │   │   ├── DashboardPage.jsx
 │   │   │   ├── ConversationalAIPage.jsx
-│   │   │   └── OtolithClassifierPage.jsx
+│   │   │   ├── OtolithClassifierPage.jsx
+│   │   │   ├── DataUploadPage.jsx
+│   │   │   └── About.jsx
 │   │   └── App.jsx
 │   └── package.json
 │
@@ -122,38 +119,33 @@ cd tattva
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate    # (Linux/Mac)
-venv\Scripts\activate       # (Windows)
+source venv/bin/activate    # Linux/Mac
+venv\Scripts\activate       # Windows
 
 pip install -r requirements.txt
 ```
 
-#### Configure environment variables (`.env`)
+#### Configure `.env`
 
 ```ini
-# Database
 DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/marinedb
 
-# Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# MinIO
 MINIO_ENDPOINT=localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_BUCKET=otoliths
 
-# Gemini API
 GEMINI_API_KEY=your_api_key_here
 
-# ChromaDB
 CHROMA_HOST=localhost
 CHROMA_PORT=8001
 CHROMA_PATH=local_data/chroma_data
 ```
 
-#### Run backend
+#### Run Backend
 
 ```bash
 uvicorn app.main:app --reload
@@ -177,33 +169,38 @@ chroma run --host localhost --port 8001 --path "local_data/chroma_data"
 
 ## 🚀 Usage
 
-- Visit **Dashboard** → View sightings map, charts, and AI insights.
-- Visit **Conversational AI** → Ask questions like:
+- **Dashboard** → Explore map, charts, correlations, insights.
+- **Conversational AI** → Ask queries like:
 
-  - _“List out fishes seen in Vizag Bay in 2023”_
-  - _“What environmental conditions do dolphins prefer?”_
+  - _“What fishes were seen near Kochi in 2023?”_
+  - _“What salinity conditions do dolphins prefer?”_
 
-- Visit **Otolith Classifier** → Upload an otolith image.
+- **Otolith Classifier** → Upload otolith images.
+- **eDNA Module** → Upload FASTA files & run sequence matching.
+- **Data Upload** → Ingest new CSV or FASTA datasets.
 
 ---
 
 ## 🔮 Roadmap
 
-- ✅ Map, charts, AI hypotheses, chat, otolith classifier
-- 🚧 Data Upload page (CSV ingestion + MinIO + DB update + RAG reindex)
-- 🚧 Collaborative workspace (multi-user annotations + comments)
-- 🚧 User authentication & role-based access
+- ✅ Dashboard + Charts + AI Hypotheses
+- ✅ Conversational AI (Gemini + RAG)
+- ✅ Otolith Classifier (ML)
+- ✅ Data Upload (CSV + eDNA ingestion)
+- 🚧 Collaborative Workspace (annotations, comments)
+- 🚧 Authentication & role-based access
+- 🚧 Export insights as reports
 
 ---
 
 ## 👥 Team
 
-Developed for **Smart India Hackathon 2025** by Team TATTVA.
+Developed for **Smart India Hackathon 2025** by **Team TATTVA (TechSpire)**.
 
 ---
 
 ## 📜 License
 
-MIT License – free to use and modify.
+MIT License – free to use, modify, and distribute.
 
 ---
