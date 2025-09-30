@@ -11,24 +11,21 @@ const getSightingsData = () => apiClient.get("/sightings");
 function ChartWidget() {
   const { data: sightings, loading, error } = useApi(getSightingsData);
 
-  // --- LOG #1: Check the raw data coming from the API hook ---
   console.log("[DataCharts] Raw data from useApi:", {
     sightings,
     loading,
     error,
   });
 
-  // --- THE FIX IS HERE: Data Transformation ---
-  // We use `useMemo` to ensure this complex calculation only runs when `sightings` data changes.
   const chartData = useMemo(() => {
     if (!Array.isArray(sightings) || sightings.length === 0) {
       return null;
     }
 
-    // Step 1: Aggregate the data.
-    // We group all temperature readings by species name.
+    // Aggregate the data by species (your backend model → scientific_name is safest)
     const speciesData = sightings.reduce((acc, sighting) => {
-      const speciesName = sighting.species.scientific_name;
+      const speciesName =
+        sighting.species.common_name || sighting.species.scientific_name;
       const temp = sighting.sea_surface_temp_c;
 
       if (!acc[speciesName]) {
@@ -41,32 +38,28 @@ function ChartWidget() {
       return acc;
     }, {});
 
-    // --- LOG #2: Check the aggregated data structure ---
     console.log("[DataCharts] Aggregated species data:", speciesData);
 
-    // Step 2: Transform the aggregated data into the format Plotly needs.
-    // We need an array for x-axis labels (species names) and an array for y-axis values (average temps).
     const labels = Object.keys(speciesData);
     const values = labels.map((label) => {
       const { temps, count } = speciesData[label];
       const sum = temps.reduce((a, b) => a + b, 0);
-      return sum / count; // Calculate the average
+      return sum / count;
     });
 
-    // --- LOG #3: Check the final arrays being sent to Plotly ---
     console.log("[DataCharts] Final data for Plotly:", { labels, values });
 
     return {
       x: labels,
       y: values,
       type: "bar",
-      marker: { color: "#4F46E5" }, // A nice indigo color for the bars
+      marker: { color: "rgb(147, 51, 234)" }, // purple theme
     };
-  }, [sightings]); // This dependency array ensures the calculation re-runs if `sightings` changes.
+  }, [sightings]);
 
   if (loading) {
     return (
-      <div className="bg-white p-4 h-80 rounded-lg shadow-md flex justify-center items-center text-gray-500">
+      <div className="bg-gray-800/60 backdrop-blur-sm p-6 h-96 rounded-xl shadow-2xl border border-gray-700/50 flex justify-center items-center text-purple-300">
         Loading chart data...
       </div>
     );
@@ -74,15 +67,18 @@ function ChartWidget() {
 
   if (error) {
     return (
-      <div className="bg-red-100 p-4 h-80 rounded-lg shadow-md flex justify-center items-center text-red-700">
+      <div className="bg-red-900/50 p-6 h-96 rounded-xl shadow-2xl border border-red-500/50 flex justify-center items-center text-red-300">
         Error loading chart data.
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg shadow-md">
-      <h1 className="text-lg font-semibold mb-4 text-gray-800">
+    <div
+      id="avg-temp-trend"
+      className="bg-gray-800/60 backdrop-blur-sm p-6 rounded-xl shadow-2xl border border-gray-700/50"
+    >
+      <h1 className="text-xl font-bold mb-4 text-white">
         Average Sea Surface Temperature by Species
       </h1>
       {chartData ? (
@@ -90,17 +86,32 @@ function ChartWidget() {
           data={[chartData]}
           layout={{
             title: "Average Sea Surface Temperature by Species",
-            yaxis: { title: "Temperature (°C)" },
-            font: { family: "Inter, sans-serif" },
-            paper_bgcolor: "rgba(0,0,0,0)", // Transparent background
+            titlefont: { color: "#E4E4E7" },
+            yaxis: {
+              title: "Temperature (°C)",
+              gridcolor: "#4B5563",
+              linecolor: "#4B5563",
+              tickfont: { color: "#A1A1AA" },
+              zerolinecolor: "#4B5563",
+              titlefont: { color: "#E4E4E7" },
+            },
+            xaxis: {
+              gridcolor: "#4B5563",
+              linecolor: "#4B5563",
+              tickfont: { color: "#A1A1AA" },
+              titlefont: { color: "#E4E4E7" },
+            },
+            font: { family: "Inter, sans-serif", color: "#E4E4E7" },
+            paper_bgcolor: "rgba(0,0,0,0)",
             plot_bgcolor: "rgba(0,0,0,0)",
+            margin: { t: 50, r: 10, b: 80, l: 60 },
           }}
           config={{ responsive: true, displayModeBar: false }}
           className="w-full h-full"
-          style={{ minHeight: "320px" }}
+          style={{ minHeight: "384px" }}
         />
       ) : (
-        <div className="h-80 flex justify-center items-center text-gray-500">
+        <div className="h-96 flex justify-center items-center text-gray-500">
           No data available to display chart.
         </div>
       )}

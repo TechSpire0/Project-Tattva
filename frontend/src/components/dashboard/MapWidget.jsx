@@ -13,8 +13,9 @@ import L from "leaflet";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import "leaflet/dist/leaflet.css";
 
-// Fix Leaflet icon paths
+// Fix Leaflet default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
@@ -40,7 +41,7 @@ const tileLayers = {
   },
 };
 
-// Component that listens for map moves and fetches sightings
+// Fetch sightings dynamically on map movement
 function FetchSightings({ setSightings }) {
   useMapEvents({
     moveend: async (map) => {
@@ -57,7 +58,7 @@ function FetchSightings({ setSightings }) {
             min_lon: minLon,
             max_lat: maxLat,
             max_lon: maxLon,
-            limit: 2000, // you can adjust depending on performance
+            limit: 2000,
           },
         });
         setSightings(res.data);
@@ -70,52 +71,36 @@ function FetchSightings({ setSightings }) {
 }
 
 function MapWidget() {
-  const [activeLayer, setActiveLayer] = useState("standard");
+  const [activeLayer, setActiveLayer] = useState("satellite");
   const [sightings, setSightings] = useState([]);
   const initialPosition = [20.5937, 78.9629]; // India center
 
   return (
-    <div className="relative h-[500px] w-full rounded-lg shadow-md overflow-hidden">
-      {/* Toggle Buttons */}
-      <div className="absolute top-2 right-2 z-10 bg-white bg-opacity-80 p-1 rounded-lg shadow-md flex space-x-1">
-        <button
-          onClick={() => setActiveLayer("standard")}
-          className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
-            activeLayer === "standard"
-              ? "bg-slate-900 text-white"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          Standard
-        </button>
-        <button
-          onClick={() => setActiveLayer("satellite")}
-          className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
-            activeLayer === "satellite"
-              ? "bg-slate-900 text-white"
-              : "bg-white text-gray-700 hover:bg-gray-100"
-          }`}
-        >
-          Satellite
-        </button>
+    <div className="relative h-[600px] w-full rounded-xl shadow-2xl border border-purple-300/30 bg-gray-900 overflow-hidden">
+      {/* Layer Toggle */}
+      <div className="absolute top-4 right-4 z-[1000] bg-gray-800/70 backdrop-blur-sm p-2 rounded-xl shadow-xl flex space-x-2 border border-gray-700/50">
+        {["satellite", "standard"].map((layer) => (
+          <button
+            key={layer}
+            onClick={() => setActiveLayer(layer)}
+            className={`px-3 py-1 text-xs font-semibold rounded-lg transition-colors ${
+              activeLayer === layer
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
+            }`}
+          >
+            {layer.charAt(0).toUpperCase() + layer.slice(1)}
+          </button>
+        ))}
       </div>
 
       <MapContainer
         center={initialPosition}
         zoom={5}
         style={{ height: "100%", width: "100%" }}
-        className="z-0"
       >
-        {/* Standard Layer */}
-        {activeLayer === "standard" && (
-          <TileLayer
-            url={tileLayers.standard.url}
-            attribution={tileLayers.standard.attribution}
-          />
-        )}
-
-        {/* Satellite Layer */}
-        {activeLayer === "satellite" && (
+        {/* Base Layers */}
+        {activeLayer === "satellite" ? (
           <>
             <TileLayer
               url={tileLayers.satellite.imagery.url}
@@ -124,11 +109,17 @@ function MapWidget() {
             <TileLayer
               url={tileLayers.satellite.labels.url}
               attribution={tileLayers.satellite.labels.attribution}
+              pane="overlayPane"
             />
           </>
+        ) : (
+          <TileLayer
+            url={tileLayers.standard.url}
+            attribution={tileLayers.standard.attribution}
+          />
         )}
 
-        {/* Trigger API fetch on map move */}
+        {/* API data fetch */}
         <FetchSightings setSightings={setSightings} />
 
         {/* Markers */}
@@ -137,23 +128,27 @@ function MapWidget() {
             key={sighting.sighting_id}
             position={[sighting.latitude, sighting.longitude]}
           >
-            <Popup>
-              <div className="font-sans w-48">
-                <p className="text-sm text-gray-600 italic mb-2">
+            <Popup className="custom-popup">
+              <div className="font-sans w-56 bg-gray-800/95 text-gray-100 p-3 rounded-lg shadow-lg border border-purple-500/40">
+                {/* Scientific Name */}
+                <h4 className="font-bold text-base mb-2 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   {sighting.species.scientific_name}
-                </p>
-                <ul className="text-xs space-y-1 text-gray-700">
-                  <li>
-                    <b>Temperature:</b> {sighting.sea_surface_temp_c}°C
+                </h4>
+
+                {/* Values */}
+                <ul className="text-sm space-y-1">
+                  <li className="flex items-center space-x-2">
+                    <span className="text-pink-400">🌡</span>
+                    <span>Temp: {sighting.sea_surface_temp_c} °C</span>
                   </li>
-                  <li>
-                    <b>Salinity:</b> {sighting.salinity_psu} PSU
-                  </li>
-                  <li>
-                    <b>Chlorophyll:</b> {sighting.chlorophyll_mg_m3} mg/m³
+                  <li className="flex items-center space-x-2">
+                    <span className="text-blue-400">🌊</span>
+                    <span>Salinity: {sighting.salinity_psu} PSU</span>
                   </li>
                 </ul>
-                <p className="text-xs text-gray-400 mt-3 border-t pt-1">
+
+                {/* ID */}
+                <p className="text-xs text-gray-400 mt-3 border-t border-gray-700 pt-1">
                   ID: {sighting.sighting_id}
                 </p>
               </div>

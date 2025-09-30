@@ -1,20 +1,54 @@
-// frontend/src/features/conversation/chatMessage.jsx
+// src/features/conversation/ChatMessage.jsx
 import React from "react";
+import ReactMarkdown from "react-markdown";
 
-// A "presentational" component for displaying a single chat bubble.
-// Its appearance changes based on whether the sender is the 'user' or the 'ai'.
-function ChatMessage({ message }) {
-  const { sender, text, isLoading } = message;
-  const isUser = sender === "user";
+const Bot = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3 3 3 0 0 0 3-3V5a3 3 0 0 0-3-3z" />
+    <path d="M16 11h-8" />
+    <path d="M16 15h-8" />
+    <path d="M16 7h-8" />
+  </svg>
+);
+const User = (props) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
 
-  // Typing indicator for when the AI is "thinking"
-  if (isLoading) {
+export default function ChatMessage({ message }) {
+  const isUser = message.sender === "user";
+  const isAiThinking = message.isLoading;
+
+  // Typing indicator
+  if (isAiThinking) {
     return (
       <div className="flex justify-start">
-        <div className="bg-gray-200 text-black p-3 rounded-lg max-w-lg flex items-center space-x-2">
-          <span className="block w-2 h-2 bg-gray-500 rounded-full animate-bounce"></span>
-          <span className="block w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-150"></span>
-          <span className="block w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-300"></span>
+        <div className="bg-purple-300/10 border border-purple-300/20 text-gray-300 p-3 rounded-lg max-w-2xl">
+          <div className="flex space-x-2">
+            <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-bounce delay-100"></div>
+            <div className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full animate-bounce delay-200"></div>
+          </div>
         </div>
       </div>
     );
@@ -23,14 +57,34 @@ function ChatMessage({ message }) {
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`p-3 rounded-lg max-w-lg ${
-          isUser ? "bg-blue-600 text-white" : "bg-gray-200 text-black"
+        className={`flex items-start space-x-2 max-w-2xl ${
+          isUser ? "flex-row-reverse space-x-reverse" : ""
         }`}
       >
-        <p>{text}</p>
+        <div
+          className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
+            isUser
+              ? "bg-gradient-to-r from-purple-400 to-purple-500"
+              : "bg-gradient-to-r from-purple-400 to-pink-500"
+          }`}
+        >
+          {isUser ? (
+            <User className="h-4 w-4 text-white" />
+          ) : (
+            <Bot className="h-4 w-4 text-white" />
+          )}
+        </div>
+
+        <div
+          className={`rounded-lg p-3 backdrop-blur-sm ${
+            isUser
+              ? "bg-purple-300/10 border border-purple-300/30 text-white"
+              : "bg-purple-300/10 border border-purple-300/30 text-gray-300"
+          } max-w-full break-words whitespace-pre-wrap`}
+        >
+          <ReactMarkdown>{message.text}</ReactMarkdown>
+        </div>
       </div>
     </div>
   );
 }
-
-export default ChatMessage;
