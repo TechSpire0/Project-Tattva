@@ -1,81 +1,41 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
-import logo from "../../assets/logo.png";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+// import { MessageCircle, Users } from 'lucide-react';
 
-function Sidebar({ sidebarOpen, onNavLinkClick, onToggleSidebar }) {
-  const linkStyle =
-    "flex items-center p-2 rounded-md text-gray-300 transition-colors duration-200";
+export default function Sidebar() {
+  const location = useLocation();
+
+  const sidebarItems = [
+    { name: 'Conversational AI', path: '/chat',  }, 
+    { name: 'Collaborative Workspace', path: '/workspace', }, 
+  ];
 
   return (
-    <aside
-      className={`
-        fixed top-0 left-0 h-screen w-64 bg-slate-900 p-4 z-50
-        transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-      `}
-    >
-      {/* Top Section with Hamburger + Logo */}
-      <div className="flex items-center justify-between mb-6">
-        {/* Logo */}
-        <div className="w-28 h-12 flex items-center">
-          <img src={logo} alt="Logo" className="object-contain" />
-        </div>
-
-        {/* Close / Toggle Button */}
-        <button
-          onClick={onToggleSidebar}
-          className="p-2 rounded-md text-gray-400 hover:bg-slate-800 hover:text-white transition-colors"
-          title="Close sidebar"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+    // Fixed position and permanent visibility for desktop screens
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-gray-900/95 backdrop-blur-md border-r border-gray-800 p-6 z-40 hidden lg:block">
+      
+      {/* Navigation Items */}
+      <div className="mt-20 space-y-2">
+        {sidebarItems.map((item) => {
+        //   const Icon = item.icon;
+          const isActive = location.pathname === item.path;
+          
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+                isActive
+                  ? 'bg-gradient-to-r from-purple-600/70 to-pink-600/70 text-white shadow-xl border border-purple-500/50 transform translate-x-1'
+                  : 'text-gray-400 hover:bg-purple-900/50 hover:text-purple-300'
+              }`}
+            >
+              {/* {Icon && <Icon className="h-5 w-5" />} */}
+              <span className="text-base font-medium">{item.name}</span>
+            </Link>
+          );
+        })}
       </div>
-
-      {/* Title */}
-      <div className="text-center my-4">
-        <h2 className="text-lg font-bold text-white">TATTVA PLATFORM</h2>
-        <p className="text-xs text-gray-400">SIH 2025 - ID25041</p>
-      </div>
-
-      {/* Sidebar Links */}
-      <nav>
-        <ul>
-          {[
-            { to: "/chat", label: "Chat" },
-            { to: "/workspace", label: "Workspace" },
-          ].map((item) => (
-            <li className="mb-2" key={item.to}>
-              <NavLink
-                to={item.to}
-                className={({ isActive }) =>
-                  `${linkStyle} ${
-                    isActive
-                      ? "bg-slate-800 text-white"
-                      : "hover:bg-slate-800 hover:text-white"
-                  }`
-                }
-                onClick={onNavLinkClick}
-              >
-                {item.label}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
     </aside>
   );
 }
-
-export default Sidebar;
