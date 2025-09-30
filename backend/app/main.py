@@ -17,8 +17,6 @@ from Bio import SeqIO
 from difflib import SequenceMatcher
 import tempfile
 
-
-
 # --- Local imports ---
 from app import models, schemas
 from app.database import SessionLocal, engine, get_db
@@ -66,13 +64,14 @@ async def root():
     return {"message": "TATTVA is running!"}
 
 # --- Species ---
-@app.get("/api/species", response_model=List[schemas.Species], tags=["Species"])
+@app.get("/api/species", tags=["Species"])
 async def get_all_species(db: Session = Depends(get_db)):
-    return db.query(models.Species).all()
+    species = db.query(models.Species).all()
+    return [schemas.Species.model_validate(s).model_dump(exclude_none=True) for s in species]
+
 
 # --- Sightings ---
-
-@app.get("/api/sightings", response_model=List[schemas.Sighting], tags=["Sightings"])
+@app.get("/api/sightings", tags=["Sightings"])
 async def get_sightings_data(
     db: Session = Depends(get_db),
     limit: int = 300,
@@ -106,9 +105,10 @@ async def get_sightings_data(
         # Only return rows that have a location
         query = query.filter(models.Sighting.location.isnot(None))
 
-        # If frontend sends a bounding box, filter with PostGIS
+        # Bounding box filter if provided
         if all(v is not None for v in (min_lat, min_lon, max_lat, max_lon)):
-            if not (-90 <= min_lat <= 90 and -90 <= max_lat <= 90 and -180 <= min_lon <= 180 and -180 <= max_lon <= 180):
+            if not (-90 <= min_lat <= 90 and -90 <= max_lat <= 90 and
+                    -180 <= min_lon <= 180 and -180 <= max_lon <= 180):
                 raise HTTPException(status_code=400, detail="Invalid bbox coordinates")
             if min_lat > max_lat or min_lon > max_lon:
                 raise HTTPException(status_code=400, detail="Invalid bbox: min values must be <= max values")
@@ -116,7 +116,7 @@ async def get_sightings_data(
             envelope = func.ST_MakeEnvelope(min_lon, min_lat, max_lon, max_lat, 4326)
             query = query.filter(func.ST_Intersects(models.Sighting.location, envelope))
 
-        # Order by date (latest first) instead of random
+        # Latest first
         query = query.order_by(models.Sighting.sighting_date.desc())
         query_results = query.limit(limit).all()
 
@@ -124,23 +124,30 @@ async def get_sightings_data(
         for row in query_results:
             if row.latitude is None or row.longitude is None:
                 continue
-            species_data = {
-                "id": row.species_id or 0,
-                "scientific_name": row.scientific_name or "Unknown",
-                "common_name": row.common_name or "Unknown",
-                "description": row.description or "",
-                "habitat": row.habitat or "",
-            }
-            response_data.append({
+
+            # Build species data with only non-null fields
+            species = schemas.Species.model_validate({
+                "id": row.species_id,
+                "scientific_name": row.scientific_name,
+                "common_name": row.common_name,
+                "description": row.description,
+                "habitat": row.habitat
+            })
+
+            # Build sighting data
+            sighting = schemas.Sighting.model_validate({
                 "sighting_id": f"CMLRE-SIGHT-{row.id}",
                 "latitude": float(row.latitude),
                 "longitude": float(row.longitude),
                 "sighting_date": row.sighting_date,
-                "sea_surface_temp_c": float(row.sea_surface_temp_c) if row.sea_surface_temp_c else None,
-                "salinity_psu": float(row.salinity_psu) if row.salinity_psu else None,
-                "chlorophyll_mg_m3": float(row.chlorophyll_mg_m3) if row.chlorophyll_mg_m3 else None,
-                "species": species_data,
+                "sea_surface_temp_c": row.sea_surface_temp_c,
+                "salinity_psu": row.salinity_psu,
+                "chlorophyll_mg_m3": row.chlorophyll_mg_m3,
+                "species": species
             })
+
+            # Dump while excluding nulls
+            response_data.append(sighting.model_dump(exclude_none=True))
 
         return response_data
 
@@ -311,9 +318,6 @@ async def upload_combined_csv(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
-
-
 @app.post("/api/upload/edna", tags=["eDNA"])
 async def upload_edna_file(
     db: Session = Depends(get_db),
@@ -367,29 +371,19 @@ async def upload_edna_file(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-class EdnaMatchRequest(BaseModel):
-    sequence: str
-
-class EdnaMatchResponse(BaseModel):
-    success: bool
-    matched: bool
-    species_name: str | None = None
-    header: str | None = None
-
-@app.post("/api/edna/match", response_model=EdnaMatchResponse, tags=["eDNA"])
-def match_edna_sequence(request: EdnaMatchRequest, db: Session = Depends(get_db)):
+@app.post("/api/edna/match", response_model=schemas.EdnaMatchResponse, tags=["eDNA"])
+def match_edna_sequence(request: schemas.EdnaMatchRequest, db: Session = Depends(get_db)):
     try:
         match = db.query(EdnaSequence).filter(EdnaSequence.sequence == request.sequence).first()
 
         if match:
-            return EdnaMatchResponse(
+            return schemas.EdnaMatchResponse(
                 success=True,
                 matched=True,
-                species_name=match.species_name,
                 header=match.header
             )
         else:
-            return EdnaMatchResponse(success=True, matched=False)
+            return schemas.EdnaMatchResponse(success=True, matched=False)
     except Exception as e:
         import logging
         logging.error(f"Error matching eDNA: {e}", exc_info=True)
