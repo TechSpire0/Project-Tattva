@@ -308,12 +308,12 @@ export default function ChatInterface() {
                 );
               })}
             </div>
-            <div className="mt-4 pt-3 border-t border-gray-700/50">
+            {/* <div className="mt-4 pt-3 border-t border-gray-700/50">
               <div className="flex items-center justify-center space-x-2 text-xs text-gray-400">
                 <Zap className="h-3 w-3 text-purple-400" />
                 <span>Click any prompt to instantly draft a query</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </Card>
       </div>

@@ -32,7 +32,7 @@ models.Base.metadata.create_all(bind=engine)
 
 # Initialize FastAPI
 app = FastAPI(
-    title="Tattva API",
+    title="Tattva Backend",
     description="Backend for SIH 2025 AI-Driven Marine Data Platform",
     version="1.0.0",
     docs_url=None

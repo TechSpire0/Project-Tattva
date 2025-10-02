@@ -99,8 +99,8 @@ function DashboardPage() {
         <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full blur-xl animate-pulse delay-1000"></div>
 
         {/* Title + subtitle */}
-        <div className="relative p-6 text-center space-y-4">
-          <h1 className="text-4xl lg:text-4xl font-extrabold bg-clip-text text-transparent pb-2 bg-gradient-to-r from-purple-400 to-pink-500">
+        <div className="relative p-3 text-center space-y-4">
+          <h1 className="text-4xl lg:text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
             TATTVA Species Explorer
           </h1>
           <p className="mt-2 text-lg text-purple-300 max-w-3xl mx-auto">

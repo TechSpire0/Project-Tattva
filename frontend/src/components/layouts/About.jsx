@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Image from "../../assets/img.jpg";
 // All imports from './ui/...' and 'lucide-react' have been REMOVED.
 // We will use inline components and SVGs as replacements.
 
@@ -308,7 +309,7 @@ export const About = React.memo(function About() {
           <div className="relative">
                        {" "}
             <img // Changed from ImageWithFallback to img
-              src="https://images.unsplash.com/photo-1657952100612-e6322301fb17?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYXJpbmUlMjBiaW9kaXZlcnNpdHklMjBmaXNofGVufDF8fHx8MTc1ODc3NDkwN3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
+              src={Image}
               alt="Marine biodiversity"
               className="rounded-2xl shadow-xl w-full h-80 object-cover border border-purple-300/30"
             />
