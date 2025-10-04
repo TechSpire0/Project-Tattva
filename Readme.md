@@ -195,4 +195,4 @@ chroma run --host localhost --port 8001 --path "local_data/chroma_data"
 
 ## 👥 Team
 
-Developed for **Smart India Hackathon 2025** by **Team TATTVA (TechSpire)**.
+Developed for **Smart India Hackathon 2025** by **Team TATTVA (TechSpire_mvgr)**.
